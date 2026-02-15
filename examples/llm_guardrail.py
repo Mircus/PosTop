@@ -79,7 +79,7 @@ def main():
     
     # Check tuberculosis claim
     check = guardrail.check_claim("tuberculosis", observed)
-    print(f"\nClaim: 'tuberculosis'")
+    print("\nClaim: 'tuberculosis'")
     print(f"Status: {check.status}")
     print(f"Explanation: {check.explanation}")
     
@@ -111,7 +111,7 @@ def main():
     print(f"\nObserved: {observed}")
     
     explanation = pt.explain("flu", observed)
-    print(f"\nExplanation for 'flu':")
+    print("\nExplanation for 'flu':")
     print(f"  Covers observed: {explanation['covers']}")
     print(f"  Has witness: {explanation['has_witness']}")
     print(f"  Witness: {explanation['witness']}")
