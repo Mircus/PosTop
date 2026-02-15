@@ -34,7 +34,9 @@ def test_forces_and_neighborhood(forcing_relation: ForcingRelation[str, str]) ->
     assert forcing_relation.neighborhood("x2") == {"b", "c"}
 
 
-def test_extension_and_profiles_are_consistent(forcing_relation: ForcingRelation[str, str]) -> None:
+def test_extension_and_profiles_are_consistent(
+    forcing_relation: ForcingRelation[str, str],
+) -> None:
     # Adding a point twice merges the profiles instead of replacing them.
     forcing_relation.add("x1", ["c"])
     assert forcing_relation.neighborhood("x1") == {"a", "b", "c"}

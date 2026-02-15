@@ -43,7 +43,9 @@ class GuardrailResult:
 class PosTopGuardrail:
     """Utility class mirroring the behavior shown in examples."""
 
-    def __init__(self, topology: PosTop[str, str], normalizer: Optional[ClaimNormalizer] = None):
+    def __init__(
+        self, topology: PosTop[str, str], normalizer: Optional[ClaimNormalizer] = None
+    ):
         self.pt = topology
         self.normalizer = normalizer or ClaimNormalizer()
 
@@ -59,7 +61,9 @@ class PosTopGuardrail:
             explanation = f"'{claim}' follows from context and has witness '{witness}'."
         elif covered and not grounded:
             status = "UNGROUNDED"
-            explanation = f"'{claim}' follows from context but lacks a confined witness."
+            explanation = (
+                f"'{claim}' follows from context but lacks a confined witness."
+            )
         elif not covered and grounded:
             status = "NON-SEQUITUR"
             explanation = f"'{claim}' has a witness but does not follow from the observed context."
@@ -81,10 +85,13 @@ class PosTopGuardrail:
         normalized_context = {self.normalizer.normalize(item) for item in context}
         return self._format_status(normalized_claim, normalized_context)
 
-    def filter_hypotheses(self, hypotheses: Sequence[str], observed: Set[str]) -> Dict[str, object]:
+    def filter_hypotheses(
+        self, hypotheses: Sequence[str], observed: Set[str]
+    ) -> Dict[str, object]:
         normalized_observed = {self.normalizer.normalize(o) for o in observed}
         details = [
-            self._format_status(self.normalizer.normalize(h), normalized_observed) for h in hypotheses
+            self._format_status(self.normalizer.normalize(h), normalized_observed)
+            for h in hypotheses
         ]
         valid = [item.claim for item in details if item.status == "VALID"]
         return {

@@ -34,12 +34,18 @@ class OperatorSuite(Generic[X, S]):
         self.pt = pt
 
     def _maybe_trace(
-        self, operator: str, inputs: Dict[str, Set[S] | Set[X]], output: Set[X] | Set[S], trace: bool
+        self,
+        operator: str,
+        inputs: Dict[str, Set[S] | Set[X]],
+        output: Set[X] | Set[S],
+        trace: bool,
     ) -> Tuple[Set[X] | Set[S], OperatorTrace[X, S] | None]:
         info = OperatorTrace(operator=operator, inputs=inputs, output=output)
         return output, info if trace else None
 
-    def ext(self, U: Iterable[S], trace: bool = False) -> Set[X] | Tuple[Set[X], OperatorTrace[X, S]]:
+    def ext(
+        self, U: Iterable[S], trace: bool = False
+    ) -> Set[X] | Tuple[Set[X], OperatorTrace[X, S]]:
         U_set = set(U)
         result = self.pt.Ext(U_set)
         if trace:
@@ -47,7 +53,9 @@ class OperatorSuite(Generic[X, S]):
             return output, info  # type: ignore[return-value]
         return result
 
-    def Int(self, A: Iterable[X], trace: bool = False) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
+    def Int(
+        self, A: Iterable[X], trace: bool = False
+    ) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
         A_set = set(A)
         result = self.pt.Int(A_set)
         if trace:
@@ -55,7 +63,9 @@ class OperatorSuite(Generic[X, S]):
             return output, info  # type: ignore[return-value]
         return result
 
-    def hit(self, C: Iterable[X], trace: bool = False) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
+    def hit(
+        self, C: Iterable[X], trace: bool = False
+    ) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
         C_set = set(C)
         result = self.pt.Hit(C_set)
         if trace:
@@ -63,7 +73,9 @@ class OperatorSuite(Generic[X, S]):
             return output, info  # type: ignore[return-value]
         return result
 
-    def sel(self, U: Iterable[S], trace: bool = False) -> Set[X] | Tuple[Set[X], OperatorTrace[X, S]]:
+    def sel(
+        self, U: Iterable[S], trace: bool = False
+    ) -> Set[X] | Tuple[Set[X], OperatorTrace[X, S]]:
         U_set = set(U)
         result = self.pt.Sel(U_set)
         if trace:
@@ -71,7 +83,9 @@ class OperatorSuite(Generic[X, S]):
             return output, info  # type: ignore[return-value]
         return result
 
-    def j(self, U: Iterable[S], trace: bool = False) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
+    def j(
+        self, U: Iterable[S], trace: bool = False
+    ) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
         U_set = set(U)
         result = self.pt.J(U_set)
         if trace:

@@ -3,7 +3,7 @@ PosTop: Positive Topology for Grounded AI
 
 A framework for building AI systems with:
 - Grounded inference (every claim has a witness)
-- Semantic entailment (covers track implications)  
+- Semantic entailment (covers track implications)
 - Resource awareness (cheapest verification first)
 - Explainable reasoning (cover chains)
 """
@@ -35,7 +35,7 @@ from .llm import (
 __version__ = "0.1.0"
 __all__ = [
     "ForcingRelation",
-    "PosTop", 
+    "PosTop",
     "from_dict",
     "CostDomain",
     "BooleanDomain",
