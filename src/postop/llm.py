@@ -5,7 +5,7 @@ Minimal LLM guardrail helpers built on PosTop.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 from .core import PosTop
 
