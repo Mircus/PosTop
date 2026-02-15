@@ -14,7 +14,7 @@ From this, we derive:
 """
 
 from __future__ import annotations
-from typing import Set, Dict, List, Optional, Any, Callable, TypeVar, Generic
+from typing import Set, Dict, List, Optional, Any, TypeVar, Generic
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 

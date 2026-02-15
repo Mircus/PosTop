@@ -8,7 +8,7 @@ At budget b, we have: x ⊩_b a iff R(x, a) ≤ b
 """
 
 from __future__ import annotations
-from typing import Set, Dict, List, Optional, Any, Callable, TypeVar, Generic, Tuple
+from typing import Set, Dict, List, Optional, TypeVar, Generic, Tuple
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import math
@@ -262,7 +262,7 @@ class CostPosTop(Generic[X, S]):
 
 # =========== Convenience ===========
 
-def medical_costs() -> CostForcing[str, str]:
+def medical_costs() -> Tuple[CostForcing[str, str], Dict[str, float]]:
     """
     Example: Medical test costs.
     
