@@ -1,0 +1,983 @@
+\documentclass[11pt]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% \usepackage{lmodern}
+% \usepackage{microtype}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{stmaryrd}
+\usepackage{enumitem}
+\usepackage{tikz-cd}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\usepackage{mdframed}
+\usepackage{booktabs}
+
+% --- Theorem envs ---
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{remark}[definition]{Remark}
+\newtheorem{example}[definition]{Example}
+\theoremstyle{plain}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{lemma}[definition]{Lemma}
+\newtheorem{corollary}[definition]{Corollary}
+
+% --- Macros ---
+\newcommand{\Pow}{\mathcal P}
+\newcommand{\Ext}{\mathrm{Ext}}
+\newcommand{\Int}{\mathrm{Int}}
+\newcommand{\Intt}{\mathrm{Int}}
+\newcommand{\Hit}{\mathrm{Hit}}
+\newcommand{\Sel}{\mathrm{Sel}}
+\newcommand{\cl}{\mathrm{cl}}
+\newcommand{\Opp}{\mathsf{op}}
+\newcommand{\forces}{\Vdash}
+\newcommand{\ltimesrel}{\ltimes}
+\newcommand{\covers}{\triangleleft}
+\newcommand{\Sub}{\mathrm{Sub}}
+\newcommand{\Sh}{\mathrm{Sh}}
+\newcommand{\Split}{\mathsf{Split}}
+
+\title{Positive Topology and Feasible Refinement: \\ Forcing Matrices, Positivity, and Information}
+\author{Mirco A. Mannucci, Giovanni Sambin}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+\textbf{Keywords:} positive topology, formal topology, pointfree topology, locales and frames, overt locales (overtness), positivity relation $a\ltimes U$, Galois connections and adjunctions, forcing semantics (forcing matrices), closed sets without complements, information refinement, game semantics, constructive mathematics, resource-/cost-aware semantics
+
+\medskip
+\textbf{MSC 2020:} 06D22 (Frames, locales), 03F65 (Other constructive mathematics), 06D20 (Heyting algebras), 18B25 (Toposes), 18A40 (Adjunctions)
+
+\medskip
+\textbf{ACM CCS:} Theory of computation $\to$ Logic; Semantics and reasoning; Program semantics; Type theory
+\end{center}
+
+
+\begin{abstract}
+Starting from a point--basic-open forcing relation $x\forces a$ between a set of points/models $X$
+and basic opens/generators $S$, we obtain the canonical Galois adjunction
+$\Ext \dashv \Intt$ between $\Pow(S)$ and $\Pow(X)$ encoding the ``open/locale'' (universal, cover/refinement) content~\cite{MacLaneMoerdijk1992}.
+Less standard, but equally canonical, is a second adjunction $\Hit \dashv \Sel$ encoding the ``closed/positive''
+(existential, probe/meet) content; this yields a direct origin for Sambin-style positivity $a\ltimesrel U$
+and ``closed without complements'' as fixed points of the contractive operator $J=\Hit\circ\Sel$~\cite{Sambin-OUP-PositiveTopology,CoquandSambinSmithValentini2003}.
+We isolate a reconstruction principle: the forcing matrix is recovered uniquely from either residual pair via singleton tests.
+Costs enter by replacing Boolean truth values with values in an ordered cost structure, relativizing point vs.\ point-free
+(weighted points, thresholds, and enriched closures).
+
+Treating positivity as \emph{primitive} exposes two operational readings~\cite{Valentini2012,CirauloVickers2016}:
+(i) an information-theoretic view, where covers are feasible refinements of partial information and positivity is witnessed feasibility, and
+(ii) a game view, where positivity corresponds to a winning strategy in a cover-refinement game.
+Together they make the ``two interlaced adjunctions'' explicit and prepare the ground for graded/resource-bounded truth.
+
+We illustrate these abstract notions through concrete examples from medical diagnosis, legal reasoning, and AI systems,
+showing how the framework provides a foundation for grounded, explainable, and resource-aware inference.
+\end{abstract}
+
+\tableofcontents
+
+% =========================================================
+\section{Introduction: Why Positive Topology?}
+
+Before diving into the formal machinery, we motivate the key ideas through a concrete scenario.
+
+\subsection{A motivating example: Medical diagnosis}
+
+Consider the task of diagnosing a patient based on observed symptoms.
+
+\begin{itemize}
+  \item $X$ = patients (the ``points'' or ``states of the world'')
+  \item $S$ = symptoms, tests, conditions (the ``observables'' or ``basic opens'')
+  \item $x \forces a$ means ``patient $x$ exhibits symptom/condition $a$''
+\end{itemize}
+
+A doctor observes that a patient has fever, cough, and fatigue. What can we infer?
+
+\paragraph{The cover relation: semantic entailment.}
+Certain conditions \emph{imply} certain symptoms. For instance:
+\[
+\mathsf{pneumonia} \covers \{\mathsf{fever}, \mathsf{cough}, \mathsf{chest\_pain}, \mathsf{infiltrates}\}
+\]
+This means: every patient with pneumonia exhibits at least one of fever, cough, chest pain, or lung infiltrates.
+More generally, $a \covers U$ says: \emph{whenever $a$ holds, something in $U$ holds}.
+
+This is the \textbf{universal/refinement} side: covers encode what implies what.
+
+\paragraph{The positivity relation: witnessed consistency.}
+Now consider the question: is the symptom cluster $\{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\}$ a \emph{realizable} profile?
+That is, does there exist a patient whose \emph{complete} symptom profile is exactly this set?
+
+We write:
+\[
+\mathsf{fever} \ltimesrel \{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\}
+\]
+to mean: there exists a patient with fever whose entire observable profile is contained in $\{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\}$.
+
+This patient is a \textbf{witness} --- the symptom cluster is realizable, not a contradiction.
+
+Contrast with:
+\[
+\mathsf{fever} \ltimesrel \{\mathsf{hypothermia}\}
+\]
+This is \emph{false}: no patient has both fever and only hypothermia. The combination is inconsistent.
+
+This is the \textbf{existential/positivity} side: positivity encodes what is consistent, what has witnesses.
+
+\paragraph{Why both matter.}
+\begin{itemize}
+  \item \textbf{Covers alone} tell us what implies what, but not what's realizable.
+  \item \textbf{Positivity alone} tells us what's consistent, but not what follows from what.
+  \item \textbf{Together} they give us: grounded inference (every conclusion has a witness) with semantic structure (implications are tracked).
+\end{itemize}
+
+\paragraph{The compatibility axiom.}
+The key interaction between covers and positivity is:
+\[
+(a \covers U) \land (a \ltimesrel V) \implies \exists u \in U.\; u \ltimesrel V
+\]
+In medical terms: if pneumonia implies \{fever, cough, infiltrates\}, and there exists a pneumonia patient confined to profile $V$,
+then there exists a fever patient (or cough patient, or infiltrates patient) also confined to $V$.
+
+\textbf{Refinement preserves witnesses.} This is the soundness condition that makes the framework coherent.
+
+\subsection{The general pattern}
+
+The medical example instantiates a universal pattern:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Domain} & \textbf{Points $X$} & \textbf{Observables $S$} \\
+\midrule
+Medicine & Patients & Symptoms, tests, conditions \\
+Law & Cases & Evidence, claims, precedents \\
+Programming & Program states & Properties, assertions, tests \\
+Finance & Portfolios & Risk factors, exposures \\
+Science & Hypotheses & Experiments, observations \\
+AI agents & Traces/executions & Constraints, evaluations \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This operational reading follows the constructive-positivity tradition initiated by Sambin~\cite{Sambin-OUP-PositiveTopology}
+and formalized via inductively generated formal topologies~\cite{CoquandSambinSmithValentini2003}.
+It abstracts the familiar locale/sheaf perspective of Mac~Lane--Moerdijk~\cite{MacLaneMoerdijk1992} down to the level of the forcing matrix we use in code.
+
+In each domain:
+\begin{itemize}
+  \item $a \covers U$ encodes \emph{semantic entailment}: $a$ implies something in $U$
+  \item $a \ltimesrel U$ encodes \emph{witnessed consistency}: there's a state with $a$ confined to $U$
+  \item The forcing $x \forces a$ connects the abstract observables to concrete states
+\end{itemize}
+
+The rest of this paper develops these ideas formally, showing how both structures arise canonically from a single forcing relation,
+and how adding costs/resources yields a budget-aware semantics suitable for AI engineering.
+
+% =========================================================
+\section{The starting datum: a forcing/incidence relation}
+
+\begin{definition}[Forcing table]
+Fix sets $X$ (points/models) and $S$ (basic opens/generators).
+A \emph{forcing relation} is a subset $R\subseteq X\times S$ written
+\[
+x\forces a \quad\text{for }(x,a)\in R.
+\]
+\end{definition}
+
+\begin{remark}[Interpretation]
+Think of $a\in S$ as a basic open (or observable, or test) and $x\in X$ as a point (or state, or model).
+Then $x\forces a$ reads: ``$x$ lies in the basic open $a$'' or ``$x$ satisfies observable $a$''.
+No topology is assumed at the outset: we start from the incidence matrix.
+\end{remark}
+
+\begin{example}[Medical diagnosis]\label{ex:medical-forcing}
+Let $X$ be a set of patients and $S$ a set of symptoms/conditions.
+Then $x \forces a$ means ``patient $x$ exhibits symptom $a$''.
+The forcing relation is the patient-symptom incidence matrix.
+\end{example}
+
+\begin{example}[Program verification]
+Let $X$ be program states and $S$ be assertions/properties.
+Then $x \forces a$ means ``state $x$ satisfies property $a$''.
+\end{example}
+
+\begin{remark}[Boolean matrix viewpoint]
+The relation $R\subseteq X\times S$ is a Boolean-valued matrix
+$R:X\times S\to \{0,1\}$.
+Much of what follows is ``linear algebra over $\{0,1\}$'': joins are unions, meets are intersections.
+This viewpoint becomes crucial when we replace $\{0,1\}$ by a cost/weight structure.
+\end{remark}
+
+% =========================================================
+\section{The first adjunction: opens via $\Ext \dashv \Intt$}\label{sec:adj1}
+
+\subsection{Direct image and the universal residual}
+
+\begin{definition}[Extension and interior-kernel]
+Define monotone maps
+\[
+\Ext:\Pow(S)\to\Pow(X),\qquad \Ext(U)=\{x\in X:\exists a\in U,\ x\forces a\},
+\]
+\[
+\Intt:\Pow(X)\to\Pow(S),\qquad \Intt(A)=\{a\in S:\forall x\in X,\ (x\forces a\Rightarrow x\in A)\}.
+\]
+\end{definition}
+
+\begin{example}[Medical: Extension and Interior]
+Continuing Example~\ref{ex:medical-forcing}:
+\begin{itemize}
+  \item $\Ext(\{\mathsf{fever}, \mathsf{cough}\})$ = patients who have fever OR cough (or both)
+  \item $\Intt(A)$ where $A$ = ``patients over 65'' gives: symptoms that \emph{only} occur in patients over 65
+\end{itemize}
+\end{example}
+
+\begin{proposition}[Galois adjunction I]
+For all $U\subseteq S$ and $A\subseteq X$,
+\[
+\Ext(U)\subseteq A \quad\Longleftrightarrow\quad U\subseteq \Intt(A).
+\]
+Equivalently, $\Ext\dashv \Intt$.
+\end{proposition}
+
+\begin{proof}
+($\Rightarrow$) If $a\in U$, then $\Ext(\{a\})\subseteq \Ext(U)\subseteq A$, hence $a\in \Intt(A)$.
+($\Leftarrow$) If $x\in \Ext(U)$, choose $a\in U$ with $x\forces a$. Since $a\in\Intt(A)$, we have $x\in A$.
+\end{proof}
+
+\begin{remark}[Universal nature]
+$\Intt(A)$ is defined by a $\forall$-condition; this is the ``universal/refinement'' side.
+This is exactly why the cover relation induced by forcing is a universal statement.
+\end{remark}
+
+\subsection{Cover and the point-free (locale/formal topology) side}
+
+\begin{definition}[Induced preorder and cover]
+Define a preorder on $S$ by
+\[
+a\le b \quad:\Longleftrightarrow\quad \forall x,\ (x\forces a\Rightarrow x\forces b),
+\]
+and define a cover relation $\covers$ by
+\[
+a\covers U \quad:\Longleftrightarrow\quad \forall x,\ (x\forces a \Rightarrow \exists b\in U,\ x\forces b).
+\]
+\end{definition}
+
+\begin{example}[Medical: Cover as symptom entailment]\label{ex:medical-cover}
+In the medical setting, $a \covers U$ means: every patient with condition $a$ exhibits at least one symptom in $U$.
+For instance:
+\begin{align*}
+\mathsf{flu} &\covers \{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}, \mathsf{myalgia}\} \\
+\mathsf{bacterial\_infection} &\covers \{\mathsf{fever}, \mathsf{elevated\_WBC}\}
+\end{align*}
+These are \emph{diagnostic implications}: the disease implies certain observable symptoms.
+\end{example}
+
+\begin{remark}[Extensional reading]
+Equivalently:
+\[
+a\le b \iff \Ext(\{a\})\subseteq \Ext(\{b\}),\qquad
+a\covers U \iff \Ext(\{a\})\subseteq \Ext(U).
+\]
+So $\covers$ is literally ``inclusion in a union''.
+\end{remark}
+
+\subsection{Extensional topology on points}
+
+\begin{definition}[Generated opens on $X$]
+A subset $A\subseteq X$ is \emph{extensional open} (generated by $S$) if
+\[
+A=\Ext(\Intt(A)).
+\]
+\end{definition}
+
+\begin{remark}
+The operator $c:=\Ext\circ\Intt$ is an \emph{interior} operator on $\Pow(X)$: it extracts the largest extensional open contained in a given subset.
+(Dually, $j:=\Intt\circ\Ext$ is a closure/nucleus-like operator on $\Pow(S)$.)
+Extensional opens are exactly the fixed points of $c$: ``those subsets describable by generators''.
+\end{remark}
+
+\begin{definition}[Extensional equivalence of points]
+Define $x\sim y$ if the induced neighborhood sets agree:
+\[
+x\sim y \quad:\Longleftrightarrow\quad \forall a\in S,\ (x\forces a \Leftrightarrow y\forces a).
+\]
+\end{definition}
+
+\begin{example}[Medical: Indistinguishable patients]
+Two patients $x \sim y$ are \emph{symptomatically indistinguishable}: they exhibit exactly the same symptoms.
+From a diagnostic standpoint, they are equivalent --- the same inferences apply to both.
+\end{example}
+
+\begin{remark}
+Point-free semantics does not distinguish points inside the same $\sim$-class.
+This is the basic ``quotient-to-locale'' phenomenon: locale data sees neighborhood behavior, not point multiplicity.
+\end{remark}
+
+% =========================================================
+\section{The second adjunction: positivity via $\Hit \dashv \Sel$}\label{sec:adj2}
+
+The locale/cover side is universal; ``closed without complements'' needs an existential probe:
+``does a basic open \emph{hit} a closed thing?''.
+This is the conceptual origin of Sambin-style positivity~\cite{Sambin-OUP-PositiveTopology,Valentini2012,CirauloVickers2016}.
+
+\subsection{Neighborhood sets and constraint-selected points}
+
+\begin{definition}[Neighborhood set]
+For $x\in X$, define its neighborhood set (or \emph{observable profile}) by
+\[
+N(x):=\{a\in S:\ x\forces a\}\subseteq S.
+\]
+\end{definition}
+
+\begin{example}[Medical: Symptom profile]
+For a patient $x$, the neighborhood set $N(x)$ is their \emph{complete symptom profile}:
+the set of all symptoms/conditions they exhibit.
+\end{example}
+
+\begin{definition}[Selection by a constraint on neighborhoods]
+Define
+\[
+\Sel:\Pow(S)\to\Pow(X),\qquad
+\Sel(U):=\{x\in X:\ N(x)\subseteq U\}.
+\]
+Thus $\Sel(U)$ consists of points all of whose basic neighborhoods lie in $U$.
+\end{definition}
+
+\begin{example}[Medical: Patients confined to a symptom cluster]
+$\Sel(\{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\})$ = patients whose \emph{entire} symptom profile
+is contained in $\{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\}$.
+
+These are patients who have \emph{only} fever, cough, and/or fatigue --- no other symptoms.
+\end{example}
+
+\subsection{The existential ``hit'' map}
+
+\begin{definition}[Hit]
+Define
+\[
+\Hit:\Pow(X)\to\Pow(S),\qquad
+\Hit(C):=\{a\in S:\exists x\in C,\ x\forces a\}.
+\]
+\end{definition}
+
+\begin{example}[Medical: Symptoms witnessed in a cohort]
+If $C$ = patients in a clinical trial, then $\Hit(C)$ = symptoms exhibited by at least one patient in the trial.
+\end{example}
+
+\begin{proposition}[Galois adjunction II]
+For all $C\subseteq X$ and $U\subseteq S$,
+\[
+\Hit(C)\subseteq U \quad\Longleftrightarrow\quad C\subseteq \Sel(U).
+\]
+Equivalently, $\Hit\dashv \Sel$.
+\end{proposition}
+
+\begin{proof}
+($\Rightarrow$) Let $x\in C$. If $a\in N(x)$ then $a\in\Hit(C)\subseteq U$. Hence $N(x)\subseteq U$ and $x\in\Sel(U)$.
+
+($\Leftarrow$) If $a\in\Hit(C)$, choose $x\in C$ with $x\forces a$. Since $x\in\Sel(U)$ we have $a\in N(x)\subseteq U$.
+\end{proof}
+
+\begin{remark}[Meaning]
+$\Hit(C)$ records which generators are \emph{witnessed} in $C$.
+$\Sel(U)$ picks points whose \emph{entire neighborhood behavior} is constrained by $U$.
+This is the ``closed-without-complements'' move: $U$ acts as a \emph{code} for a closed-like object by constraining neighborhoods, not by negation.
+\end{remark}
+
+% =========================================================
+\section{Positivity and closed sets without complements}
+
+\subsection{The positivity operator $J=\Hit\circ\Sel$}
+
+\begin{definition}[Positivity interior on codes]
+Define
+\[
+J:\Pow(S)\to\Pow(S),\qquad J(U):=\Hit(\Sel(U)).
+\]
+Equivalently,
+\[
+a\in J(U)\quad\Longleftrightarrow\quad \exists x\in X\ \bigl(x\forces a\ \wedge\ N(x)\subseteq U\bigr).
+\]
+\end{definition}
+
+\begin{definition}[Positivity relation]
+Define $\ltimesrel\subseteq S\times \Pow(S)$ by
+\[
+a\ltimesrel U \quad:\Longleftrightarrow\quad a\in J(U).
+\]
+\end{definition}
+
+\begin{remark}[One-line intuition]
+$a\ltimesrel U$ means: there exists a point $x$ in basic open $a$ such that all basic neighborhoods of $x$ lie in $U$.
+So $U$ behaves like a ``closed neighborhood specification'' and $a$ \emph{hits} it.
+\end{remark}
+
+\begin{example}[Medical: Positivity as witnessed symptom clusters]\label{ex:medical-positivity}
+The statement $\mathsf{fever} \ltimesrel \{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\}$ means:
+
+\begin{quote}
+There exists a patient who has fever and whose \emph{complete} symptom profile is $\subseteq \{\mathsf{fever}, \mathsf{cough}, \mathsf{fatigue}\}$.
+\end{quote}
+
+This patient is a \textbf{witness} that fever is consistent with the symptom cluster.
+
+Contrast: $\mathsf{fever} \ltimesrel \{\mathsf{hypothermia}\}$ is \emph{false} because no patient
+has both fever and only hypothermia --- the combination is contradictory.
+
+Positivity detects \textbf{realizability}: which symptom combinations actually occur in patients.
+\end{example}
+
+\begin{proposition}[A point forces positivity]\label{prop:point-implies-positive}
+Assume a point $x\in X$ and a generator $a\in S$ with $x\forces a$.
+Then $a$ is positive in the unary sense, i.e.\ $a\ltimesrel S$.
+More generally, if $U\subseteq S$ satisfies $N(x)\subseteq U$, then $a\ltimesrel U$.
+\end{proposition}
+
+\begin{proof}
+If $N(x)\subseteq U$ then $x\in\Sel(U)$ by definition, hence $a\in\Hit(\Sel(U))=J(U)$,
+i.e.\ $a\ltimesrel U$.  Taking $U=S$ gives $a\ltimesrel S$.
+\end{proof}
+
+\subsection{Elementary properties}
+
+\begin{proposition}[Contractive and monotone]
+For all $U,V\subseteq S$:
+\begin{enumerate}[label=(\alph*)]
+\item $J(U)\subseteq U$.
+\item If $U\subseteq V$ then $J(U)\subseteq J(V)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) If $a\in J(U)$, choose $x$ with $x\forces a$ and $N(x)\subseteq U$. Then $a\in N(x)\subseteq U$.
+
+(b) If $U\subseteq V$ then $\Sel(U)\subseteq \Sel(V)$, hence $\Hit(\Sel(U))\subseteq \Hit(\Sel(V))$.
+\end{proof}
+
+\begin{proposition}[Idempotence]\label{prop:idempotence-laws}
+$J= \Hit\circ\Sel$ is idempotent: $J(J(U))=J(U)$.
+\end{proposition}
+
+\begin{proof}
+Since $J\le \mathrm{id}$, we have $J(J(U))\subseteq J(U)$.
+For the reverse, $\mathrm{id}\le \Sel\circ\Hit$ implies $\Sel(U)\subseteq \Sel(J(U))$; applying $\Hit$ yields $J(U)\subseteq J(J(U))$.
+\end{proof}
+
+\begin{definition}[Formal closed (via positivity)]
+Call $U\subseteq S$ \emph{(positively) closed} if $J(U)=U$.
+\end{definition}
+
+\begin{example}[Medical: Complete symptom profiles]\label{ex:medical-closed}
+A set $U \subseteq S$ is positively closed iff: whenever there exists a patient with symptom $a$
+whose profile is contained in $U$, then $a \in U$.
+
+Equivalently: $U$ is a \textbf{complete symptom cluster} --- you cannot find a patient ``inside $U$''
+who exhibits a symptom outside $U$.
+\end{example}
+
+\subsection{The compatibility axiom}
+
+The key interaction between covers and positivity is captured by:
+
+\begin{proposition}[Compatibility]\label{prop:compatibility}
+For all $a \in S$ and $U, V \subseteq S$:
+\[
+(a \covers U) \land (a \ltimesrel V) \implies \exists u \in U.\; u \ltimesrel V.
+\]
+\end{proposition}
+
+\begin{proof}
+Suppose $a \covers U$ and $a \ltimesrel V$.
+By positivity, there exists $x$ with $x \forces a$ and $N(x) \subseteq V$.
+By the cover, since $x \forces a$, there exists $u \in U$ with $x \forces u$.
+Then $u \in N(x) \subseteq V$ and $x$ witnesses $u \ltimesrel V$.
+\end{proof}
+
+\begin{example}[Medical: Refinement preserves witnesses]
+Suppose $\mathsf{pneumonia} \covers \{\mathsf{fever}, \mathsf{cough}, \mathsf{infiltrates}\}$
+and there exists a pneumonia patient confined to profile $V$.
+
+Then there exists a fever patient (or cough patient, or infiltrates patient) also confined to $V$.
+
+The diagnostic refinement from ``pneumonia'' to its symptoms preserves the witness.
+\end{example}
+
+\begin{remark}[Why compatibility matters]
+Compatibility is the \textbf{soundness condition} for refinement:
+if you refine a hypothesis (via covers), you don't lose your witnesses (positivity).
+This is what makes the framework coherent for inference.
+\end{remark}
+
+% =========================================================
+\section{Information content and refinement games}\label{sec:info-games}
+
+The formal relations $\covers$ and $\ltimesrel$ admit an interpretation closer to computation than to classical topology.
+Think of a generator $a\in S$ as a \emph{partial information state}.  A cover $a\covers U$
+says that to \emph{settle} the information in $a$ one must proceed to a feasible refinement and end up in \emph{one of} the subcases in $U$.
+
+Positivity adds one crucial twist: existence is not classical negation of emptiness, but a \emph{witnessed} possibility of continuing the refinement process.
+
+\subsection{The refinement game $G(a,U)$}
+
+Fix $a\in S$ and a set $U\subseteq S$ of ``acceptable outcomes''.
+Define an infinite two-player game $G(a,U)$:
+
+\begin{itemize}
+  \item The current position is a generator $b\in S$ (initially $b=a$).
+  \item \emph{Refiner} (``Devil'') chooses a cover $b\covers V$.
+  \item \emph{Witness} (``God'') responds by choosing some $v\in V$.
+  \item The next position is $b:=v$.
+  \item Witness wins if she can play forever while keeping every chosen position inside $U$.
+\end{itemize}
+
+\begin{proposition}[Positivity as a winning condition]\label{prop:positivity-game}
+If $a\ltimesrel U$, then Witness has a winning strategy in $G(a,U)$.
+\end{proposition}
+
+\begin{proof}
+By $a\in J(U)$ there exists $x\in X$ with $x\forces a$ and $N(x)\subseteq U$.
+Whenever Refiner plays $b\covers V$ with $x\forces b$, there exists $v\in V$ with $x\forces v$.
+Witness chooses such $v$. Since $v\in N(x)\subseteq U$, the position stays in $U$.
+\end{proof}
+
+\paragraph{Medical diagnosis as a refinement game.}
+The game $G(\mathsf{fever}, U)$ where $U$ is a diagnostic profile:
+\begin{itemize}
+  \item Refiner (skeptic): ``You say fever? What kind? Bacterial? Viral?''
+  \item Witness (diagnostician): ``Bacterial fever'' (chooses refinement in $U$)
+  \item Refiner: ``What symptoms? Give me a cover.''
+  \item Witness: ``Elevated WBC'' (still in $U$)
+\end{itemize}
+Witness wins iff there's a real patient (the witness $x$) to guide all choices.
+
+\paragraph{Legal reasoning as a refinement game.}
+Let $X$ = legal cases, $S$ = claims/evidence/precedents.
+The game: opposing counsel (Refiner) demands finer distinctions; the advocate (Witness) must find precedents.
+Positivity = having a real case to cite at every challenge.
+
+% =========================================================
+\section{Two adjunctions and four operators}\label{sec:two-adjunctions}
+
+The same forcing table gives two adjunctions, hence four operators:
+
+\[
+\Pow(S)\ \underset{\Intt}{\overset{\Ext}{\rightleftarrows}}\ \Pow(X)
+\qquad(\Ext\dashv \Intt),
+\qquad\qquad
+\Pow(X)\ \underset{\Sel}{\overset{\Hit}{\rightleftarrows}}\ \Pow(S)
+\qquad(\Hit\dashv \Sel).
+\]
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Operator} & \textbf{Type} & \textbf{Meaning} \\
+\midrule
+$\Ext$ & $\Pow(S) \to \Pow(X)$ & Points satisfying some observable in $U$ \\
+$\Intt$ & $\Pow(X) \to \Pow(S)$ & Observables universally valid on $A$ \\
+$\Hit$ & $\Pow(X) \to \Pow(S)$ & Observables witnessed in $C$ \\
+$\Sel$ & $\Pow(S) \to \Pow(X)$ & Points confined to profile $U$ \\
+\midrule
+$j = \Intt \circ \Ext$ & $\Pow(S) \to \Pow(S)$ & Closure (formal opens) \\
+$c = \Ext \circ \Intt$ & $\Pow(X) \to \Pow(X)$ & Interior (extensional opens) \\
+$J = \Hit \circ \Sel$ & $\Pow(S) \to \Pow(S)$ & Interior (formal closeds) \\
+$\cl = \Sel \circ \Hit$ & $\Pow(X) \to \Pow(X)$ & Closure (on points) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{remark}[Two sides of the same coin]
+Both adjunctions arise from the same forcing relation, but govern different semantics:
+\begin{itemize}
+\item $\Ext\dashv\Intt$ = universal refinement / locale / covers
+\item $\Hit\dashv\Sel$ = existential probes / positivity / closed-without-complements
+\end{itemize}
+\end{remark}
+
+% =========================================================
+\section{Reconstruction of forcing from residuals}
+
+A central observation (cf.\ Ciraulo--Sambin~\cite{CirauloSambin2012}) is that the forcing table is recoverable from either left adjoint,
+since left adjoints preserve joins and are determined by their action on singletons.
+
+\begin{theorem}[Singleton reconstruction]
+If $F=\Ext$ arises from $\forces$, then $\forces$ is uniquely determined by:
+\[
+x\forces a \Longleftrightarrow x\in \Ext(\{a\}).
+\]
+Similarly for $\Hit$:
+\[
+x\forces a \Longleftrightarrow a\in \Hit(\{x\}).
+\]
+\end{theorem}
+
+\begin{proof}
+Since $\Ext$ preserves unions, $\Ext(U)=\bigcup_{a\in U}\Ext(\{a\})$.
+Thus $x\in \Ext(U)$ iff $\exists a\in U$ with $x\in \Ext(\{a\})$.
+\end{proof}
+
+\begin{remark}[What is \emph{not} reconstructible]
+The composites $j=\Intt\circ\Ext$ or $J=\Hit\circ\Sel$ generally lose witness-level information.
+The residual \emph{pair} determines forcing; a single composite does not.
+\end{remark}
+
+% =========================================================
+\section{Costs and resource-bounded semantics}
+
+The Boolean case uses $\{0,1\}$. We now generalize by replacing Boolean truth with values in an ordered cost structure,
+mirroring the enriched positivity relations studied by Ciraulo--Vickers~\cite{CirauloVickers2016}.
+
+\subsection{Ordered costs: a minimal baseline}\label{subsec:ordered-costs}
+
+\begin{definition}[Cost set]\label{def:cost-set}
+A \emph{cost set} is a preorder $(B,\preceq)$ whose elements are budgets.
+We read $b\preceq b'$ as ``budget $b$ is usable whenever $b'$ is'' (more budget = more permissive).
+\end{definition}
+
+\begin{definition}[Cost-valued forcing]\label{def:cost-valued-forcing}
+A \emph{cost-valued forcing matrix} is a map $R:X\times S\to B$.
+For each budget $b\in B$ we define:
+\[
+x \forces_b a \quad:\!\!\iff\quad R(x,a)\preceq b.
+\]
+\end{definition}
+
+\begin{example}[Medical: Verification costs]\label{ex:medical-costs}
+Different tests have different costs:
+
+\begin{center}
+\begin{tabular}{lrl}
+\toprule
+\textbf{Test/Observation} & \textbf{Cost} & \textbf{Notes} \\
+\midrule
+Fever & \$0 & Thermometer \\
+Cough & \$0 & Observation \\
+Blood pressure & \$5 & Standard equipment \\
+Blood test (WBC) & \$50 & Lab work \\
+X-ray & \$200 & Imaging \\
+CT scan & \$500 & Advanced imaging \\
+PCR test & \$100 & Molecular \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The cost-valued forcing $R(x, a) = c$ means: ``verifying that patient $x$ has condition $a$ costs $c$.''
+
+At budget $b = \$50$, we can verify fever, cough, blood pressure, and WBC --- but not X-ray or CT scan.
+
+The resource-aware diagnostic question: \emph{``What is the cheapest test that discriminates between remaining hypotheses?''}
+\end{example}
+
+\begin{remark}[Filtration viewpoint]
+For $b\preceq b'$ we have $x\forces_b a \Rightarrow x\forces_{b'} a$.
+All constructions from earlier sections apply at each budget $b$, producing a monotone filtration.
+\end{remark}
+
+\subsection{Budget-indexed covers and positivity}
+
+\begin{definition}[Budget-indexed relations]
+For each budget $b \in B$:
+\[
+a \covers_b U \quad:\Longleftrightarrow\quad \forall x,\ (x \forces_b a \Rightarrow \exists u \in U,\ x \forces_b u)
+\]
+\[
+a \ltimesrel_b U \quad:\Longleftrightarrow\quad \exists x,\ (x \forces_b a \land N_b(x) \subseteq U)
+\]
+where $N_b(x) = \{a \in S : x \forces_b a\}$.
+\end{definition}
+
+\begin{example}[Medical: Budget-dependent diagnosis]
+At budget \$50 (fever, cough, blood test available):
+\begin{itemize}
+  \item $\mathsf{bacterial\_infection} \covers_b \{\mathsf{fever}, \mathsf{elevated\_WBC}\}$ --- can verify
+  \item $\mathsf{pneumonia} \covers_b \{\mathsf{fever}, \mathsf{cough}\}$ --- partial (can't see infiltrates)
+\end{itemize}
+
+At budget \$250 (adds X-ray):
+\begin{itemize}
+  \item $\mathsf{pneumonia} \covers_{b'} \{\mathsf{fever}, \mathsf{cough}, \mathsf{infiltrates}\}$ --- full verification
+\end{itemize}
+
+Higher budget = finer discrimination = more refined diagnosis.
+\end{example}
+
+\subsection{Optional: cost domains}
+
+\begin{definition}[Cost domain]\label{def:cost-domain}
+A \emph{cost domain} is $(V,\le,\otimes,I,\multimap)$ where:
+\begin{enumerate}[label=(\alph*)]
+\item $(V,\le)$ is a poset
+\item $(V,\otimes,I)$ is a commutative monoid, monotone in both arguments
+\item Residuation: $u\otimes v \le w \Longleftrightarrow v \le (u\multimap w)$
+\item Specified joins/meets exist for the families used below
+\end{enumerate}
+\end{definition}
+
+\begin{remark}[Examples]
+\begin{enumerate}[label=(\roman*)]
+\item Boolean: $V=\{0,1\}$, $\otimes=\wedge$, $u\multimap w=(\neg u)\vee w$
+\item Lawvere metric: $V=[0,\infty]$ reversed, $\otimes=+$, $u\multimap w=\max\{0,w-u\}$
+\item Probability: $V = [0,1]$, $\otimes = \cdot$, $I = 1$
+\end{enumerate}
+\end{remark}
+
+\subsection{Enriched adjunctions}
+
+With a cost domain $V$ and $V$-valued forcing $R:X\times S\to V$:
+
+\begin{definition}[Enriched operators]
+\[
+(\Ext_V\phi)(x)=\bigvee_{a\in S}\ \phi(a)\otimes R(x,a),
+\qquad
+(\Int_V\psi)(a)=\bigwedge_{x\in X}\ \bigl(R(x,a)\multimap \psi(x)\bigr)
+\]
+\[
+(\Hit_V\psi)(a)=\bigvee_{x\in X}\ \psi(x)\otimes R(x,a),
+\qquad
+(\Sel_V\phi)(x)=\bigwedge_{a\in S}\ \bigl(R(x,a)\multimap \phi(a)\bigr)
+\]
+\end{definition}
+
+\begin{proposition}[Enriched adjunctions]
+$\Ext_V\dashv \Int_V$ and $\Hit_V\dashv \Sel_V$ (when joins/meets exist).
+\end{proposition}
+
+\begin{definition}[Enriched positivity]
+$J_V:=\Hit_V\circ \Sel_V$ and $\|a\ltimesrel \phi\|_V := (J_V\phi)(a)$.
+\end{definition}
+
+\begin{remark}
+When $V=\{0,1\}$, this recovers the Boolean case exactly.
+\end{remark}
+
+% =========================================================
+\section{Conceptual summary: the three-layer separation}
+
+\begin{center}
+\fbox{\begin{minipage}{0.9\linewidth}
+\textbf{Forcing-matrix viewpoint (three-layer separation).}
+\[
+\begin{array}{c}
+\text{(i) forcing/adjoints: } R:X\times S\to V\\[2pt]
+\Downarrow\\[2pt]
+\text{(ii) positivity \& closedness without complements: } J, \ltimesrel\\[2pt]
+\Downarrow\\[2pt]
+\text{(iii) resource-aware logic: behavior of }\wedge\text{ vs.\ }\otimes\text{, structural rules}
+\end{array}
+\]
+Layer (iii) is where resource-bounded positive topology deviates from the classical picture.
+\end{minipage}}
+\end{center}
+
+\subsection{Budget-indexed truth}
+
+The syntax remains $(\wedge,\vee,\to,\forall,\exists)$.
+What changes is the judgement: truth is indexed by budget.
+\[
+a \Vdash_b \varphi \quad\text{means: ``from state $a$, $\varphi$ is verified within budget $b$''}
+\]
+
+\paragraph{Why $\wedge$ becomes subtle.}
+To establish $\varphi\wedge\psi$ you must allocate resources across subgoals.
+We use an abstract splitting relation $\Split(b;\,b_1,b_2)$:
+\[
+a\Vdash_b(\varphi\wedge\psi)\quad\Longleftrightarrow\quad
+\exists b_1,b_2\ \bigl(\Split(b;\,b_1,b_2)\ \&\ a\Vdash_{b_1}\varphi\ \&\ a\Vdash_{b_2}\psi\bigr)
+\]
+
+\paragraph{Existence is witnessed.}
+To assert $\exists x.\,\varphi(x)$ one must provide a witness fitting the budget.
+Positivity is the mechanism turning ``nonempty'' into ``witnessably inhabited''.
+
+% =========================================================
+\appendix
+\section{Application to AI engineering}
+
+This appendix explains why forcing/positivity/cost provides concrete engineering value for AI systems.
+
+\subsection{The AI analogue of forcing}
+
+In AI engineering, one evaluates systems against requirements:
+\begin{itemize}
+\item $X$ = executions / traces / agent rollouts
+\item $S$ = constraints (``tool-call succeeded'', ``no disallowed content'', ``latency $<500$ms'', etc.)
+\item $x\forces a$ = ``execution $x$ satisfies constraint $a$''
+\end{itemize}
+
+The forcing matrix $R:X\times S\to V$ is an evaluation matrix.
+
+\subsection{Two adjunctions = two engineering operations}
+
+\paragraph{(1) $\Ext\dashv\Intt$: specification refinement.}
+\begin{itemize}
+\item $\Ext(U)$: which traces satisfy at least one check in $U$?
+\item $\Intt(A)$: which checks are universally valid over traces $A$?
+\item $a\covers U$: whenever $a$ holds, some $b\in U$ holds
+\end{itemize}
+This is specification management: what the system guarantees.
+
+\paragraph{(2) $\Hit\dashv\Sel$: witness finding.}
+\begin{itemize}
+\item $\Hit(C)$: which checks are witnessed in trace-set $C$?
+\item $\Sel(U)$: which traces live entirely inside constraint envelope $U$?
+\item $a\ltimesrel U$: exists a trace satisfying $a$ with profile $\subseteq U$
+\end{itemize}
+This is counterexample search and safe operating region identification.
+
+\subsection{Positivity = safety envelopes}
+
+Engineers want ``safe = complement of bad''. This fails because:
+\begin{enumerate}[label=(\alph*)]
+\item the complement is not observable (unknown unknowns)
+\item violations are sparse and adversarial
+\item safety is better defined by positive evidence of robustness
+\end{enumerate}
+
+Positivity gives a constructive alternative:
+\begin{itemize}
+\item closed code $U$ with $J(U)=U$ is a safety envelope
+\item $a\ltimesrel U$ provides witness-based membership
+\end{itemize}
+
+Safety is a robust region, not a complement.
+
+\subsection{LLM + PosTop: grounded generation}\label{subsec:llm-postop}
+
+Current LLM agents fail in three ways:
+\begin{enumerate}
+  \item \textbf{Hallucination}: claims without witnesses
+  \item \textbf{Contradiction}: inconsistent claims
+  \item \textbf{Inefficiency}: expensive verification when cheap suffices
+\end{enumerate}
+
+PosTop addresses all three:
+\begin{itemize}
+  \item \textbf{Cover check}: Does conclusion follow from observations?
+  \item \textbf{Positivity check}: Is there a witness?
+  \item \textbf{Resource optimization}: What's the cheapest discriminating test?
+\end{itemize}
+
+\paragraph{Architecture.}
+\begin{enumerate}
+  \item LLM generates candidate hypotheses $H$
+  \item PosTop filters: keep $h \in H$ iff $h \covers \text{observed}$ and $h \ltimesrel \text{observed}$
+  \item PosTop suggests: cheapest observation to discriminate remaining $H$
+  \item Repeat until $|H| = 1$ or budget exhausted
+\end{enumerate}
+
+This turns the LLM from oracle to \emph{grounded reasoner}: every claim has a cover-chain (explanation) and witness (grounding).
+
+\paragraph{Comparison with knowledge graphs.}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{Knowledge Graph} & \textbf{PosTop} \\
+\midrule
+Entities & \checkmark & \checkmark \\
+Relations & \checkmark & \checkmark \\
+Facts & \checkmark & \checkmark \\
+\textbf{Entailment} & $\times$ & \checkmark \\
+\textbf{Witnesses} & $\times$ & \checkmark \\
+\textbf{Costs} & $\times$ & \checkmark \\
+\textbf{Refinement soundness} & $\times$ & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{quote}
+\textbf{Knowledge Graphs} tell you what exists.\\
+\textbf{PosTop} tells you what's consistent, what implies what, and how to verify efficiently.
+\end{quote}
+
+Knowledge graphs are dictionaries. PosTop is grammar.
+
+% =========================================================
+\appendix
+\section{Software and Reproducibility}\label{app:software}
+
+The LaTeX file you are reading lives in the same repository as the reference implementation of the forcing matrix, adjunctions, and notebooks.
+The codebase is organized as follows:
+\begin{itemize}
+  \item \texttt{src/postop/core.py} implements the data structures discussed in Sections~\ref{sec:adj2}--\ref{sec:info-games}, with the forcing relation encoded as a Python dictionary of point $\to$ observable sets, plus the cost-aware variants in \texttt{src/postop/costs.py}.
+  \item \texttt{src/postop/operators.py} and \texttt{src/postop/llm.py} provide tracing/explainability helpers that surface the cover witnesses/counterexamples required by the diagnostic examples.
+  \item \texttt{examples/} mirrors the running medical and guardrail scenarios; \texttt{tests/} exercises the adjunction identities via \texttt{pytest}.
+  \item \texttt{docs/REPRODUCIBILITY.md} gives a copy/paste runbook matching the commands below.
+\end{itemize}
+The latest sources live at \url{https://github.com/mirco-mannucci/postop}; we snapshot paper+code together via the git tag \texttt{v0.1.0} (and subsequent releases) so the commands below always map to a reproducible commit/DOI pair.
+
+\subsection{Environment setup}
+
+We keep the environment lightweight (pure Python + pytest). From the repository root:
+\begin{verbatim}
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+\end{verbatim}
+
+\subsection{Running the examples}
+
+The forcing table is serialized as ordinary Python dictionaries and can be inspected directly. To reproduce the medical and guardrail walkthroughs from Sections~\ref{sec:adj2} and~\ref{sec:info-games}:
+\begin{verbatim}
+python examples/medical.py
+python examples/llm_guardrail.py
+\end{verbatim}
+Each script prints the Ext/Int/Hit/Sel results, the compatibility witnesses, and the guardrail counterexamples that correspond to the formal statements in the main text.
+
+\subsection{Notebooks and tests}
+
+The ActionList roadmap adds four short notebooks under \texttt{notebooks/}; they can be executed headlessly via:
+\begin{verbatim}
+jupyter nbconvert --to notebook --execute notebooks/01_basics_ext_int_hit_sel_j.ipynb
+\end{verbatim}
+Swap in the remaining notebook filenames (medical diagnosis, costs, guardrails) to reproduce the figures in the extended version of the paper.
+
+Finally, run the test suite to check the adjunction/proof obligations:
+\begin{verbatim}
+pytest -q
+\end{verbatim}
+These tests import the installed package so they are venv-friendly and catch regressions both in the mathematical invariants (idempotence/contractivity) and in the explainability helpers referenced by the notebooks.
+
+% =========================================================
+\begin{thebibliography}{99}
+
+\bibitem{Sambin-OUP-PositiveTopology}
+G.~Sambin, \emph{Positive Topology: A New Practice in Constructive Mathematics}.
+Oxford University Press, 2025.
+
+\bibitem{CirauloSambin2012}
+F.~Ciraulo and G.~Sambin.
+A constructive {G}alois connection between closure and interior.
+\emph{J. Symbolic Logic} 77(4):1308--1324, 2012.
+
+\bibitem{Valentini2012}
+S.~Valentini.
+Relative formal topology: the binary positivity predicate comes first.
+\emph{Math. Structures Comput. Sci.} 22(1):69--102, 2012.
+
+\bibitem{CirauloVickers2016}
+F.~Ciraulo and S.~Vickers.
+Positivity relations on a locale.
+\emph{Ann. Pure Appl. Logic} 167(9):806--819, 2016.
+
+\bibitem{MacLaneMoerdijk1992}
+S.~Mac~Lane and I.~Moerdijk.
+\emph{Sheaves in Geometry and Logic}.
+Springer, 1992.
+
+\bibitem{CoquandSambinSmithValentini2003}
+T.~Coquand, G.~Sambin, J.~Smith, and S.~Valentini.
+Inductively generated formal topologies.
+\emph{Ann. Pure Appl. Logic} 124(1--3):71--106, 2003.
+
+\end{thebibliography}
+
+\end{document}
