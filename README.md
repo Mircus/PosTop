@@ -1,7 +1,7 @@
 # PosTop: Positive Topology for Grounded AI
 
 <p align="center">
-  <img src="assets/logo.svg" alt="PosTop logo" width="360">
+  <img src="assets/logo.svg" alt="PosTop logo" width="700">
 </p>
 
 <p align="center">
