@@ -1,30 +1,30 @@
-from postop import OperatorSuite, PosTop, from_dict
+from postop import IncidenceSystem, OperatorSuite, from_dict
 
 
-def build_topology() -> PosTop[str, str]:
+def build_system() -> IncidenceSystem[str, str]:
     data = {
         "x1": ["a", "b"],
         "x2": ["b", "c"],
         "x3": ["a"],
     }
-    return PosTop(from_dict(data))
+    return IncidenceSystem(from_dict(data))
 
 
 def test_operator_suite_trace() -> None:
-    ops = OperatorSuite(build_topology())
+    ops = OperatorSuite(build_system())
     ext, info = ops.ext({"a"}, trace=True)
     assert ext == {"x1", "x3"}
     assert info is not None
-    assert info.operator == "Ext"
+    assert info.operator == "ext"
     assert info.inputs == {"U": {"a"}}
 
-    hit, hit_info = ops.hit({"x1", "x2"}, trace=True)
-    assert hit == {"a", "b", "c"}
-    assert hit_info and hit_info.operator == "Hit"
+    diamond, diamond_info = ops.diamond({"x1", "x2"}, trace=True)
+    assert diamond == {"a", "b", "c"}
+    assert diamond_info and diamond_info.operator == "diamond"
 
 
 def test_explain_chain_reports_missing_witnesses() -> None:
-    ops = OperatorSuite(build_topology())
+    ops = OperatorSuite(build_system())
     messages = list(ops.explain_chain("a", {"a", "b"}))
     assert messages[0].startswith("Cover holds")
     assert any("x1" in msg for msg in messages[1:])

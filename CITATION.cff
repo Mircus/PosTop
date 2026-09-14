@@ -1,7 +1,9 @@
 cff-version: 1.2.0
 message: If you use PosTop in academic work, please cite both the software and the accompanying paper.
 title: PosTop
-version: 0.1.0
+version: 0.2.0
+repository-code: https://github.com/Mircus/PosTop
+url: https://github.com/Mircus/PosTop
 authors:
   - family-names: Mannucci
     given-names: Mirco A.
@@ -10,11 +12,16 @@ authors:
 license: MIT
 preferred-citation:
   type: article
-  title: Positive Topology and Feasible Refinement — Forcing Matrices, Positivity, and Information
+  title: "Positive Topology and Feasible Refinement: Forcing Matrices, Positivity, and Information"
   authors:
     - family-names: Mannucci
       given-names: Mirco A.
     - family-names: Sambin
       given-names: Giovanni
-  year: 2024
-  notes: Draft manuscript distributed with this repository (see docs/positive_topology_survey_v2.pdf).
+  year: 2026
+  date-released: 2026-09-08
+  notes: >-
+    Draft manuscript distributed with this repository (see
+    docs/Positive_Topology_and_Feasible_Refinemen.pdf). No arXiv
+    identifier or DOI is recorded here yet -- add one only once it
+    actually exists; do not invent a placeholder.

@@ -1,21 +1,37 @@
 """
-PosTop Core: Forcing relations and positive topology.
+PosTop Core: Forcing relations and the point-derived Positive Topology.
 
 The fundamental structure is a forcing relation x ⊩ a between:
 - X: points (states, patients, cases, traces)
 - S: observables (symptoms, tests, constraints)
 
-From this, we derive:
-- Ext/Int: the universal (cover) adjunction
-- Hit/Sel: the existential (positivity) adjunction
-- J = Hit ∘ Sel: the positivity interior
-- Covers: a ◁ U iff Ext({a}) ⊆ Ext(U)
-- Positivity: a ⋉ U iff a ∈ J(U)
+From this, IncidenceSystem derives (canonical names from the paper
+"Positive Topology and Feasible Refinement", Mannucci & Sambin 2026):
+
+- ext ⊣ box:      the universal (cover) adjunction
+- diamond ⊣ rest: the existential (positivity) adjunction
+- saturation = box ∘ ext:      formal opens
+- reduction  = diamond ∘ rest: the positivity interior 𝒥
+- covers:   a ◁ U  iff  ext({a}) ⊆ ext(U)
+- positive: a ⋉ U  iff  a ∈ reduction(U)
+
+This is the *point-derived* case (survey §1-8): cover and positivity are
+derived from a concrete forcing table, and the compatibility axiom is a
+theorem, not an assumption. See postop.formal.FormalPositiveTopology for
+the primitive/pointfree case, where positivity is taken as data.
 """
 
 from __future__ import annotations
-from typing import Set, Dict, List, Optional, Any, TypeVar, Generic
+
+import warnings
 from dataclasses import dataclass, field
+from typing import Any, Dict, Generic, List, Optional, Set, TypeVar
+
+from .certificates import (
+    CompatibilityCertificate,
+    CoverCertificate,
+    PositivityCertificate,
+)
 
 X = TypeVar("X")  # Points
 S = TypeVar("S")  # Observables
@@ -59,7 +75,7 @@ class ForcingRelation(Generic[X, S]):
         return self._forward.get(x, set()).copy()
 
     def extension(self, a: S) -> Set[X]:
-        """Get Ext({a}) = {x : x ⊩ a}."""
+        """Get ext({a}) = {x : x ⊩ a}."""
         return self._backward.get(a, set()).copy()
 
     @property
@@ -88,30 +104,36 @@ class ForcingRelation(Generic[X, S]):
         return f"ForcingRelation({len(self._forward)} points, {len(self._backward)} observables)"
 
 
-class PosTop(Generic[X, S]):
-    """
-    A positive topology derived from a forcing relation.
+def _deprecated(old_name: str, new_name: str) -> None:
+    warnings.warn(
+        f"'{old_name}' is a deprecated alias; use '{new_name}' instead "
+        f"(canonical names per the paper's operator table -- see docs/ARCHITECTURE.md).",
+        DeprecationWarning,
+        stacklevel=3,
+    )
 
-    Provides:
-    - Ext, Int: the universal (cover) adjunction
-    - Hit, Sel: the existential (positivity) adjunction
-    - J: the positivity interior
-    - covers: the cover relation
-    - positive: the positivity relation
+
+class IncidenceSystem(Generic[X, S]):
+    """
+    A point-derived Positive Topology built on top of a ForcingRelation.
+
+    Provides the two canonical adjunctions (ext/box and diamond/rest),
+    their composites (saturation/reduction), the induced cover and
+    positivity relations, and certificate-producing explanations.
     """
 
     def __init__(self, forcing: ForcingRelation[X, S]):
         self.forcing = forcing
 
-    # =========== The First Adjunction: Ext ⊣ Int ===========
+    # =========== The First Adjunction: ext ⊣ box ===========
 
-    def Ext(self, U: Set[S]) -> Set[X]:
+    def ext(self, U: Set[S]) -> Set[X]:
         """
-        Extension: Ext(U) = {x : ∃a ∈ U. x ⊩ a}
+        Extension: ext(U) = {x : ∃a ∈ U. x ⊩ a}
 
         Points that satisfy at least one observable in U.
         """
-        result = set()
+        result: Set[X] = set()
         backward = self.forcing._backward
         for a in U:
             points = backward.get(a)
@@ -119,39 +141,39 @@ class PosTop(Generic[X, S]):
                 result.update(points)
         return result
 
-    def Int(self, A: Set[X]) -> Set[S]:
+    def box(self, E: Set[X]) -> Set[S]:
         """
-        Interior-kernel: Int(A) = {a : ∀x. x ⊩ a ⟹ x ∈ A}
+        The universal residual: box(E) = {a : ∀x. x ⊩ a ⟹ x ∈ E}
 
-        Observables that only hold for points in A.
+        Observables that only hold for points in E.
         """
-        result = set()
+        result: Set[S] = set()
         for a in self.forcing.observables:
             ext_a = self.forcing.extension(a)
-            if ext_a <= A:  # subset
+            if ext_a <= E:  # subset
                 result.add(a)
         return result
 
-    # =========== The Second Adjunction: Hit ⊣ Sel ===========
+    # =========== The Second Adjunction: diamond ⊣ rest ===========
 
-    def Hit(self, C: Set[X]) -> Set[S]:
+    def diamond(self, D: Set[X]) -> Set[S]:
         """
-        Hit: Hit(C) = {a : ∃x ∈ C. x ⊩ a}
+        diamond(D) = {a : ∃x ∈ D. x ⊩ a}
 
-        Observables witnessed by at least one point in C.
+        Observables witnessed by at least one point in D.
         """
-        result = set()
-        for x in C:
+        result: Set[S] = set()
+        for x in D:
             result |= self.forcing.neighborhood(x)
         return result
 
-    def Sel(self, U: Set[S]) -> Set[X]:
+    def rest(self, U: Set[S]) -> Set[X]:
         """
-        Selection: Sel(U) = {x : N(x) ⊆ U}
+        rest(U) = {x : N(x) ⊆ U}
 
         Points whose entire neighborhood is contained in U.
         """
-        result = set()
+        result: Set[X] = set()
         for x in self.forcing.points:
             N_x = self.forcing.neighborhood(x)
             if N_x <= U:  # subset
@@ -160,49 +182,49 @@ class PosTop(Generic[X, S]):
 
     # =========== Composite Operators ===========
 
-    def J(self, U: Set[S]) -> Set[S]:
+    def reduction(self, U: Set[S]) -> Set[S]:
         """
-        Positivity interior: J(U) = Hit(Sel(U))
+        Positivity interior: reduction(U) = diamond(rest(U))  (paper 𝒥)
 
         Observables that have a witness confined to U.
         """
-        return self.Hit(self.Sel(U))
+        return self.diamond(self.rest(U))
 
     def closure_on_points(self, C: Set[X]) -> Set[X]:
         """
-        Closure on points: cl(C) = Sel(Hit(C))
+        Closure on points: cl(C) = rest(diamond(C))
 
         Points whose every observable is witnessed in C.
         """
-        return self.Sel(self.Hit(C))
+        return self.rest(self.diamond(C))
 
-    def j(self, U: Set[S]) -> Set[S]:
+    def saturation(self, U: Set[S]) -> Set[S]:
         """
-        Nucleus on observables: j(U) = Int(Ext(U))
+        Nucleus on observables: saturation(U) = box(ext(U))  (paper 𝒜)
 
         Saturated formal opens.
         """
-        return self.Int(self.Ext(U))
+        return self.box(self.ext(U))
 
     # =========== Cover and Positivity Relations ===========
 
     def covers(self, a: S, U: Set[S]) -> bool:
         """
-        Cover relation: a ◁ U iff Ext({a}) ⊆ Ext(U)
+        Cover relation: a ◁ U iff ext({a}) ⊆ ext(U)
 
         Every point satisfying a satisfies something in U.
         """
         ext_a = self.forcing.extension(a)
-        ext_U = self.Ext(U)
+        ext_U = self.ext(U)
         return ext_a <= ext_U
 
     def positive(self, a: S, U: Set[S]) -> bool:
         """
-        Positivity relation: a ⋉ U iff a ∈ J(U)
+        Positivity relation: a ⋉ U iff a ∈ reduction(U)
 
         There exists a witness for a confined to U.
         """
-        return a in self.J(U)
+        return a in self.reduction(U)
 
     def covers_witnesses(self, a: S, U: Set[S]) -> Dict[X, Set[S]]:
         """
@@ -219,24 +241,28 @@ class PosTop(Generic[X, S]):
         """
         Return x witnessing the failure of a ◁ U, if one exists.
         """
-        ext_U = self.Ext(U)
+        ext_U = self.ext(U)
         for x in self.forcing.extension(a):
             if x not in ext_U:
                 return x
         return None
 
-    def explain_cover(self, a: S, U: Set[S]) -> Dict[str, Any]:
+    def explain_cover(self, a: S, U: Set[S]) -> CoverCertificate[X, S]:
         """
-        Explain why a ◁ U holds or fails.
+        Explain why a ◁ U holds or fails, as a structured certificate.
         """
         counterexample = self.covers_counterexample(a, U)
         witnesses = self.covers_witnesses(a, U)
         holds = counterexample is None and self.covers(a, U)
-        return {
-            "holds": holds,
-            "witnesses": witnesses,
-            "counterexample": counterexample,
-        }
+        return CoverCertificate(
+            subject=a,
+            claim=f"{a!r} ◁ U",
+            region=U,
+            holds=holds,
+            witnesses=witnesses,
+            counterexample=counterexample,
+            reason_code="cover_holds" if holds else "cover_counterexample",
+        )
 
     def find_witness(self, a: S, U: Set[S]) -> Optional[X]:
         """
@@ -249,15 +275,38 @@ class PosTop(Generic[X, S]):
                 return x
         return None
 
+    def explain_positive(self, a: S, U: Set[S]) -> PositivityCertificate[X, S]:
+        """
+        Explain why a ⋉ U holds or fails, as a structured certificate.
+        """
+        witness = self.find_witness(a, U)
+        holds = witness is not None
+        return PositivityCertificate(
+            subject=a,
+            claim=f"{a!r} ⋉ U",
+            region=U,
+            holds=holds,
+            witness=witness,
+            witness_profile=self.forcing.neighborhood(witness) if witness is not None else None,
+            reason_code="positivity_witnessed" if holds else "no_witness",
+        )
+
     # =========== Formal Opens and Closeds ===========
 
     def is_formal_open(self, U: Set[S]) -> bool:
-        """Check if U is a formal open: j(U) = U."""
-        return self.j(U) == U
+        """Check if U is a formal open: saturation(U) = U."""
+        return self.saturation(U) == U
 
     def is_formal_closed(self, U: Set[S]) -> bool:
-        """Check if U is a formal closed: J(U) = U."""
-        return self.J(U) == U
+        """
+        Check if U is a formal closed: reduction(U) = U.
+
+        reduction(U) ⊆ U is automatic (contractivity, Prop. 5.6a) -- the
+        nontrivial direction, and the actual content of this check, is
+        U ⊆ reduction(U): every a ∈ U must have a witness x with x ⊩ a
+        and N(x) ⊆ U. Do not conflate this with mere contractivity.
+        """
+        return self.reduction(U) == U
 
     # =========== Compatibility ===========
 
@@ -266,20 +315,89 @@ class PosTop(Generic[X, S]):
         Check the compatibility axiom:
         If a ◁ U and a ⋉ V, find u ∈ U with u ⋉ V.
 
-        Returns the witnessing u, or None if preconditions fail.
+        Returns the witnessing u, or None if the preconditions fail.
+        For the structured version (with counterexample/provenance), use
+        compatibility_certificate().
+        """
+        cert = self.compatibility_certificate(a, U, V)
+        return cert.surviving_refinement
+
+    def compatibility_certificate(
+        self, a: S, U: Set[S], V: Set[S]
+    ) -> CompatibilityCertificate[X, S]:
+        """
+        Structured version of the compatibility check (survey Prop. 5.10):
+        (a ◁ U) ∧ (a ⋉ V) ⟹ ∃u∈U. u ⋉ V
         """
         if not self.covers(a, U):
-            return None
+            return CompatibilityCertificate(
+                holds=False,
+                source_generator=a,
+                cover_family=U,
+                positive_region=V,
+                counterexample="precondition failed: not (a ◁ U)",
+                reason_code="precondition_cover_failed",
+            )
         if not self.positive(a, V):
-            return None
+            return CompatibilityCertificate(
+                holds=False,
+                source_generator=a,
+                cover_family=U,
+                positive_region=V,
+                counterexample="precondition failed: not (a ⋉ V)",
+                reason_code="precondition_positive_failed",
+            )
 
-        # Find u ∈ U with u ⋉ V
         for u in U:
             if self.positive(u, V):
-                return u
+                return CompatibilityCertificate(
+                    holds=True,
+                    source_generator=a,
+                    cover_family=U,
+                    positive_region=V,
+                    surviving_refinement=u,
+                    reason_code="compatibility_holds",
+                )
 
-        # This should not happen if the theory is correct
-        raise AssertionError("Compatibility axiom violated!")
+        # For a point-derived IncidenceSystem this is a proven theorem and
+        # should be unreachable; surfaced as a certificate rather than a
+        # raised exception so callers can log/report it uniformly.
+        return CompatibilityCertificate(
+            holds=False,
+            source_generator=a,
+            cover_family=U,
+            positive_region=V,
+            counterexample="no u in U with u positive in V (theorem violated -- check inputs)",
+            reason_code="compatibility_axiom_violated",
+        )
+
+    # =========== Singleton Reconstruction (survey Theorem 8.1) ===========
+
+    def reconstruct_forcing_from_ext(self) -> ForcingRelation[X, S]:
+        """
+        Rebuild the forcing relation from ext alone, using:
+            x ⊩ a  iff  x ∈ ext({a})
+
+        Should reproduce the original ForcingRelation's `forces` behavior
+        exactly (see tests/test_core.py for the round-trip check).
+        """
+        rebuilt: ForcingRelation[X, S] = ForcingRelation()
+        for a in self.forcing.observables:
+            for x in self.ext({a}):
+                rebuilt.add(x, [a])
+        return rebuilt
+
+    def reconstruct_forcing_from_diamond(self) -> ForcingRelation[X, S]:
+        """
+        Rebuild the forcing relation from diamond alone, using:
+            x ⊩ a  iff  a ∈ diamond({x})
+        """
+        rebuilt: ForcingRelation[X, S] = ForcingRelation()
+        for x in self.forcing.points:
+            observables = self.diamond({x})
+            if observables:
+                rebuilt.add(x, observables)
+        return rebuilt
 
     # =========== Diagnosis / Inference ===========
 
@@ -314,6 +432,61 @@ class PosTop(Generic[X, S]):
             "consistent": covers_ok and (witness is not None),
             "cover_details": cover_details,
         }
+
+    # =========== Bridge to the primitive/pointfree interface ===========
+
+    def to_formal_positive_topology(self):
+        """
+        Wrap this derived system behind the FormalPositiveTopology
+        interface (postop.formal), where cover/positivity are treated as
+        primitive rather than derived. Useful to exercise the same
+        validators against both the point-derived and pointfree cases.
+        """
+        from .formal import FormalPositiveTopology
+
+        return FormalPositiveTopology(
+            generators=set(self.forcing.observables),
+            cover=self.covers,
+            positive=self.positive,
+        )
+
+    # =========== Deprecated aliases (pre-canonical-rename names) ===========
+    # Kept so existing code keeps working; each emits a DeprecationWarning
+    # and delegates to the canonical method. See docs/ARCHITECTURE.md.
+
+    def Ext(self, U: Set[S]) -> Set[X]:
+        _deprecated("Ext", "ext")
+        return self.ext(U)
+
+    def Int(self, E: Set[X]) -> Set[S]:
+        _deprecated("Int", "box")
+        return self.box(E)
+
+    def Hit(self, C: Set[X]) -> Set[S]:
+        _deprecated("Hit", "diamond")
+        return self.diamond(C)
+
+    def Sel(self, U: Set[S]) -> Set[X]:
+        _deprecated("Sel", "rest")
+        return self.rest(U)
+
+    def J(self, U: Set[S]) -> Set[S]:
+        _deprecated("J", "reduction")
+        return self.reduction(U)
+
+    def j(self, U: Set[S]) -> Set[S]:
+        _deprecated("j", "saturation")
+        return self.saturation(U)
+
+    def __repr__(self) -> str:
+        return f"IncidenceSystem({self.forcing!r})"
+
+
+# Backward-compatible alias: the historical class name for IncidenceSystem.
+# `from postop import PosTop` keeps working; new code should prefer
+# IncidenceSystem, which names what the class actually is (one derived
+# topology among possibly several -- "PosTop" is the package/paper name).
+PosTop = IncidenceSystem
 
 
 # =========== Convenience Functions ===========

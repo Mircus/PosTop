@@ -1,13 +1,18 @@
 """
 Operator helpers and lightweight tracing utilities for PosTop.
+
+Canonical operator names (matching the paper): ext, box, diamond, rest,
+reduction. The old Ext/Int/Hit/Sel/J-flavored method names are kept as
+deprecated aliases on OperatorSuite for backward compatibility.
 """
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import Dict, Generic, Iterable, Iterator, Set, Tuple, TypeVar
 
-from .core import PosTop
+from .core import IncidenceSystem
 
 X = TypeVar("X")
 S = TypeVar("S")
@@ -27,11 +32,12 @@ class OperatorTrace(Generic[X, S]):
 
 class OperatorSuite(Generic[X, S]):
     """
-    Convenience wrapper re-exporting Ext/Int/Hit/Sel/J with optional tracing.
+    Convenience wrapper re-exporting ext/box/diamond/rest/reduction with
+    optional tracing.
     """
 
-    def __init__(self, pt: PosTop[X, S]):
-        self.pt = pt
+    def __init__(self, system: IncidenceSystem[X, S]):
+        self.system = system
 
     def _maybe_trace(
         self,
@@ -47,49 +53,49 @@ class OperatorSuite(Generic[X, S]):
         self, U: Iterable[S], trace: bool = False
     ) -> Set[X] | Tuple[Set[X], OperatorTrace[X, S]]:
         U_set = set(U)
-        result = self.pt.Ext(U_set)
+        result = self.system.ext(U_set)
         if trace:
-            output, info = self._maybe_trace("Ext", {"U": U_set}, result, trace=True)
+            output, info = self._maybe_trace("ext", {"U": U_set}, result, trace=True)
             return output, info  # type: ignore[return-value]
         return result
 
-    def Int(
-        self, A: Iterable[X], trace: bool = False
+    def box(
+        self, E: Iterable[X], trace: bool = False
     ) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
-        A_set = set(A)
-        result = self.pt.Int(A_set)
+        E_set = set(E)
+        result = self.system.box(E_set)
         if trace:
-            output, info = self._maybe_trace("Int", {"A": A_set}, result, trace=True)
+            output, info = self._maybe_trace("box", {"E": E_set}, result, trace=True)
             return output, info  # type: ignore[return-value]
         return result
 
-    def hit(
-        self, C: Iterable[X], trace: bool = False
+    def diamond(
+        self, D: Iterable[X], trace: bool = False
     ) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
-        C_set = set(C)
-        result = self.pt.Hit(C_set)
+        D_set = set(D)
+        result = self.system.diamond(D_set)
         if trace:
-            output, info = self._maybe_trace("Hit", {"C": C_set}, result, trace=True)
+            output, info = self._maybe_trace("diamond", {"D": D_set}, result, trace=True)
             return output, info  # type: ignore[return-value]
         return result
 
-    def sel(
+    def rest(
         self, U: Iterable[S], trace: bool = False
     ) -> Set[X] | Tuple[Set[X], OperatorTrace[X, S]]:
         U_set = set(U)
-        result = self.pt.Sel(U_set)
+        result = self.system.rest(U_set)
         if trace:
-            output, info = self._maybe_trace("Sel", {"U": U_set}, result, trace=True)
+            output, info = self._maybe_trace("rest", {"U": U_set}, result, trace=True)
             return output, info  # type: ignore[return-value]
         return result
 
-    def j(
+    def reduction(
         self, U: Iterable[S], trace: bool = False
     ) -> Set[S] | Tuple[Set[S], OperatorTrace[X, S]]:
         U_set = set(U)
-        result = self.pt.J(U_set)
+        result = self.system.reduction(U_set)
         if trace:
-            output, info = self._maybe_trace("J", {"U": U_set}, result, trace=True)
+            output, info = self._maybe_trace("reduction", {"U": U_set}, result, trace=True)
             return output, info  # type: ignore[return-value]
         return result
 
@@ -98,12 +104,44 @@ class OperatorSuite(Generic[X, S]):
         Yield a textual explanation for `observable ◁ cover`.
         """
         cover_set = set(cover)
-        explanation = self.pt.explain_cover(observable, cover_set)
-        if explanation["holds"]:
+        cert = self.system.explain_cover(observable, cover_set)
+        if cert.holds:
             yield f"Cover holds: every witness of '{observable}' hits {cover_set}."
-            witnesses: Dict[X, Set[S]] = explanation["witnesses"]
-            for point, hits in witnesses.items():
+            for point, hits in cert.witnesses.items():
                 yield f"- {point} witnesses via {sorted(hits)}"
         else:
-            missing = explanation["counterexample"]
-            yield f"Cover fails: '{missing}' forces '{observable}' but misses {cover_set}."
+            yield f"Cover fails: '{cert.counterexample}' forces '{observable}' but misses {cover_set}."
+
+    # ---- Deprecated aliases (pre-canonical-rename names) ----
+
+    def Int(self, A: Iterable[X], trace: bool = False):
+        warnings.warn(
+            "OperatorSuite.Int is deprecated; use .box instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.box(A, trace=trace)
+
+    def hit(self, C: Iterable[X], trace: bool = False):
+        warnings.warn(
+            "OperatorSuite.hit is deprecated; use .diamond instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.diamond(C, trace=trace)
+
+    def sel(self, U: Iterable[S], trace: bool = False):
+        warnings.warn(
+            "OperatorSuite.sel is deprecated; use .rest instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.rest(U, trace=trace)
+
+    def j(self, U: Iterable[S], trace: bool = False):
+        warnings.warn(
+            "OperatorSuite.j is deprecated; use .reduction instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.reduction(U, trace=trace)

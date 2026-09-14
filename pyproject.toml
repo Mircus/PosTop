@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "postop"
-version = "0.1.0"
-description = "Positive Topology for Grounded AI"
+version = "0.2.0"
+description = "A reference implementation of the forcing-matrix view of Positive Topology"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -14,9 +14,8 @@ authors = [
 ]
 keywords = [
     "positive topology",
-    "formal topology", 
+    "formal topology",
     "constructive mathematics",
-    "AI guardrails",
     "grounded inference",
     "knowledge representation",
 ]
@@ -34,6 +33,12 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Mircus/PosTop"
+Repository = "https://github.com/Mircus/PosTop"
+Issues = "https://github.com/Mircus/PosTop/issues"
+Changelog = "https://github.com/Mircus/PosTop/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

@@ -9,7 +9,7 @@ This example shows how to use PosTop for medical diagnosis:
 - Positivity = symptom cluster is realizable
 """
 
-from postop import PosTop, from_dict
+from postop import IncidenceSystem, from_dict
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     }
 
     forcing = from_dict(patients)
-    pt = PosTop(forcing)
+    system = IncidenceSystem(forcing)
 
     print("=" * 60)
     print("MEDICAL DIAGNOSIS WITH POSITIVE TOPOLOGY")
@@ -35,12 +35,12 @@ def main():
     for name, symptoms in patients.items():
         print(f"  {name}: {symptoms}")
 
-    # =========== Test Extension ===========
-    print("\n--- Extension (Ext) ---")
-    fever_patients = pt.Ext({"fever"})
+    # =========== Test ext ===========
+    print("\n--- Extension (ext) ---")
+    fever_patients = system.ext({"fever"})
     print(f"Patients with fever: {fever_patients}")
 
-    cough_patients = pt.Ext({"cough"})
+    cough_patients = system.ext({"cough"})
     print(f"Patients with cough: {cough_patients}")
 
     # =========== Test Covers ===========
@@ -48,11 +48,11 @@ def main():
 
     # Does "fever" cover {"fever", "cough"}?
     # i.e., does every fever patient have fever or cough?
-    result = pt.covers("fever", {"fever", "cough"})
+    result = system.covers("fever", {"fever", "cough"})
     print(f"fever ◁ {{fever, cough}}: {result}")  # True (trivially, fever ∈ set)
 
     # Check if having infiltrates implies having fever or cough
-    result = pt.covers("infiltrates", {"fever", "cough"})
+    result = system.covers("infiltrates", {"fever", "cough"})
     print(f"infiltrates ◁ {{fever, cough}}: {result}")  # True (Dave has both)
 
     # =========== Test Positivity ===========
@@ -60,30 +60,30 @@ def main():
 
     # Is there a patient with fever whose profile is ⊆ {fever, cough, fatigue}?
     profile = {"fever", "cough", "fatigue"}
-    result = pt.positive("fever", profile)
-    witness = pt.find_witness("fever", profile)
+    result = system.positive("fever", profile)
+    witness = system.find_witness("fever", profile)
     print(f"fever ⋉ {profile}: {result}")
     print(f"  Witness: {witness}")  # Alice
 
     # Is there a patient with fever whose profile is ⊆ {fever, headache}?
     profile2 = {"fever", "headache"}
-    result2 = pt.positive("fever", profile2)
-    witness2 = pt.find_witness("fever", profile2)
+    result2 = system.positive("fever", profile2)
+    witness2 = system.find_witness("fever", profile2)
     print(f"fever ⋉ {profile2}: {result2}")
     print(f"  Witness: {witness2}")  # None - Bob has more symptoms
 
     # Contradiction check: fever ⋉ {hypothermia}?
-    result3 = pt.positive("fever", {"hypothermia"})
+    result3 = system.positive("fever", {"hypothermia"})
     print(f"fever ⋉ {{hypothermia}}: {result3}")  # False - no witness
 
     # =========== Formal Closeds ===========
-    print("\n--- Formal Closeds (J-stable sets) ---")
+    print("\n--- Formal Closeds (reduction-stable sets) ---")
 
     # Alice's profile is a formal closed (complete symptom cluster)
     alice_profile = {"fever", "cough", "fatigue"}
-    j_alice = pt.J(alice_profile)
-    print(f"J({alice_profile}) = {j_alice}")
-    print(f"Is formal closed: {j_alice == alice_profile}")
+    reduced = system.reduction(alice_profile)
+    print(f"reduction({alice_profile}) = {reduced}")
+    print(f"Is formal closed: {system.is_formal_closed(alice_profile)}")
 
     # =========== Compatibility Axiom ===========
     print("\n--- Compatibility Axiom ---")
@@ -95,11 +95,12 @@ def main():
 
     print(f"U = {U}")
     print(f"V = {V}")
-    print(f"infiltrates ◁ U: {pt.covers('infiltrates', U)}")
-    print(f"infiltrates ⋉ V: {pt.positive('infiltrates', V)}")
+    print(f"infiltrates ◁ U: {system.covers('infiltrates', U)}")
+    print(f"infiltrates ⋉ V: {system.positive('infiltrates', V)}")
 
-    u = pt.check_compatibility("infiltrates", U, V)
-    print(f"Compatibility witness u ∈ U with u ⋉ V: {u}")
+    cert = system.compatibility_certificate("infiltrates", U, V)
+    print(f"Compatibility witness u ∈ U with u ⋉ V: {cert.surviving_refinement}")
+    print(f"  (full certificate: {cert.to_dict()})")
 
     # =========== Diagnosis ===========
     print("\n--- Diagnosis: Consistent Hypotheses ---")
@@ -107,12 +108,12 @@ def main():
     observed = {"fever", "cough"}
     print(f"Observed symptoms: {observed}")
 
-    consistent = pt.consistent_hypotheses(observed)
+    consistent = system.consistent_hypotheses(observed)
     print(f"Consistent hypotheses: {consistent}")
 
     # Explain each
     for hyp in ["fever", "cough", "infiltrates", "headache"]:
-        explanation = pt.explain(hyp, observed)
+        explanation = system.explain(hyp, observed)
         print(f"\n  {hyp}:")
         print(f"    Covers observed: {explanation['covers']}")
         print(f"    Has witness: {explanation['has_witness']}")
