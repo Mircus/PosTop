@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/postop-logo.png" alt="PosTop logo" width="480">
+  <img src="assets/posttoplogo.jpg" alt="PosTop logo" width="700">
 </p>
 
 <p align="center">
