@@ -63,6 +63,16 @@ Positivity, and Information"* (Mannucci & Sambin). See
 - `CITATION.cff` publication year and repository URL corrected; no
   arXiv ID or DOI is claimed until one actually exists.
 
+### Removed (follow-up cleanup pass)
+- `docs/positive_topology_survey_v2.pdf` / `.tex` — the old, superseded
+  paper draft, now that `docs/Positive_Topology_and_Feasible_Refinemen.pdf`
+  is confirmed canonical.
+- `docs/actionlist.md` — the previous repo-refresh worklist; fully
+  completed and superseded by this changelog and `REPO_REFRESH_REPORT.md`.
+- `assets/logo.png` / `.svg` and `assets/postop-logo.png` / `.svg` — both
+  superseded by `assets/posttoplogo.jpg`, which the maintainer uploaded
+  and pointed the README hero image at directly.
+
 ### Deprecated
 - `PosTop` class name → use `IncidenceSystem` (kept as an alias).
 - `IncidenceSystem.Ext/Int/Hit/Sel/J/j` → use

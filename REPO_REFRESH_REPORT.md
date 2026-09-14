@@ -55,6 +55,18 @@ Positivity, and Information"* (Mannucci & Sambin,
 **Removed:**
 - `src/postop.egg-info/` — a stray committed build artifact (should never
   have been tracked); now covered by `.gitignore`
+- `docs/positive_topology_survey_v2.pdf` / `.tex` — the old, superseded
+  paper draft, once the new draft (`docs/Positive_Topology_and_Feasible_Refinemen.pdf`)
+  was confirmed to be the canonical one (removed in a follow-up cleanup
+  pass after the initial refresh; see CHANGELOG.md)
+- `docs/actionlist.md` — the previous (Codex) repo-refresh worklist;
+  fully completed and superseded by this file and `CHANGELOG.md`
+- `assets/logo.png` / `.svg` — the original logo, superseded once the
+  maintainer uploaded `assets/posttoplogo.jpg` and pointed the README at it
+- `assets/postop-logo.png` / `.svg` — the logo generated during this
+  refresh's first pass; also superseded by `assets/posttoplogo.jpg` and
+  removed once it was clear it was unreferenced dead weight rather than
+  a useful spare
 
 **Notebook renames** (content also updated to canonical operator names):
 - `01_basics_ext_int_hit_sel_j.ipynb` → `01_forcing_and_adjunctions.ipynb`
@@ -64,10 +76,10 @@ Positivity, and Information"* (Mannucci & Sambin,
 - `04_llm_guardrail_pattern.ipynb` → `04_ai_certificates.ipynb`
 
 **Deliberately left untouched** (see "Not implemented / out of scope"):
-`docs/actionlist.md`, `docs/neuroglyph_platform_guide.md` (N/A — wrong
-repo, ignore), `docs/positive_topology_survey_v2.pdf`/`.tex` (old,
-superseded draft — kept for history, not deleted), `status.md`,
-`docs/MECHANIZATION_STATUS.md`, `scripts/no_sorry.py` (see below).
+`status.md`, `docs/MECHANIZATION_STATUS.md`, `scripts/no_sorry.py` (see
+below) — an unrelated, in-progress Lean/RB-TT effort that predates and
+is unrelated to this worklist; not PosTop-repo clutter, just a separate
+concern living in the same repo.
 
 ## API changes
 
@@ -156,13 +168,14 @@ says not to promote them to established API:
   not something to do silently. `tests.yml` (pytest + the new build
   smoke test) is green; `lint.yml` was red before this refresh and
   remains red, for the same pre-existing reason, unchanged by this work.
-- **`docs/positive_topology_survey_v2.tex`** (the old, superseded paper
-  draft) still contains the old `mirco-mannucci/postop` URL and a
-  `v0.1.0` tag reference. I did not edit it: it's someone's academic
-  manuscript source, is superseded by the September 2026 PDF, and
-  rewriting paper prose is outside a software-repo-refresh mandate. It's
-  called out in `docs/history`-equivalent framing implicitly (superseded
-  paper, kept for the record) rather than edited.
+- **`docs/positive_topology_survey_v2.pdf`/`.tex`** (the old, superseded
+  paper draft, containing the old `mirco-mannucci/postop` URL and a
+  `v0.1.0` tag reference) was initially left in place rather than edited
+  — it's someone's academic manuscript source, and rewriting paper prose
+  is outside a software-repo-refresh mandate. In a follow-up cleanup
+  pass, the maintainer asked for stale files to be removed outright once
+  the September 2026 PDF was confirmed canonical, so both files were
+  deleted rather than edited (git history still has them if needed).
 - **Hypothesis (property-based testing library) was NOT added.** Used
   plain, seeded `random` sampling instead (`tests/test_properties.py`),
   per the worklist's own "keep dependencies lightweight" instruction.
